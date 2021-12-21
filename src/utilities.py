@@ -1,6 +1,8 @@
 import json
 import pandas as pd
-
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import metrics
 
 def load_xlsx(path: str) -> pd.DataFrame:
     """
@@ -126,3 +128,17 @@ def get_datasets() -> dict:
     }
 
     return result
+
+
+def random_forest(df: pd.DataFrame, target: str) -> tuple:
+    """
+    This method creates and executes a random forest model for a specified dataframe.
+    """
+    df_test = df.copy()
+    y = df_test.pop(target)
+    X = df_test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
+    clf = RandomForestClassifier(max_depth=30, n_estimators=100)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    return metrics.accuracy_score(y_test, y_pred)

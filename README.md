@@ -10,7 +10,7 @@ Setup:
 1. Install venv package: `pip install --user virtualenv`
 2. Create virtual environment: `python3 -m venv venv`
 3. Activate virtual environment:
-   * Linux: `source venv/Scripts/activate`
+   * Linux: `source venv/bin/activate`
    * Windows: `.\venv\Scripts\activate`
 4. Install requirements: `pip install -r requirements.txt`
 5. Launch Jupyter Notebook:
