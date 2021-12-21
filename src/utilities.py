@@ -1,8 +1,11 @@
 import json
+import numpy as np
 import pandas as pd
+import seaborn as sb
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
+
 
 def load_xlsx(path: str) -> pd.DataFrame:
     """
@@ -49,7 +52,7 @@ def get_dummies(dataset: pd.DataFrame, cols: list) -> pd.DataFrame:
     return pd.get_dummies(dataset, columns=cols, drop_first=True)
 
 
-def get_datasets() -> dict:
+def get_datasets(method: str = "bfill") -> dict:
     """
     This method creates a dictionary containing datasets.
     """
@@ -64,67 +67,44 @@ def get_datasets() -> dict:
     dataset = dataset.drop(["PATIENT_VISIT_IDENTIFIER", "ICU"], axis=1)
 
     # Fill null values
-    dataset_backward_fill = dataset.fillna(method="bfill")
-    dataset_forward_fill = dataset.fillna(method="ffill")
+    dataset = dataset.fillna(method=method)
 
-    datasets = [dataset_backward_fill, dataset_forward_fill]
+    # Rename cols
+    dataset.columns = dataset.columns.str.replace(" ", "_")
 
-    # Set dummies
-    for dataset in datasets:
-        dataset.columns = dataset.columns.str.replace(" ", "_")
-        dataset = get_dummies(dataset, cols=["AGE_PERCENTIL"])
+    window_02_dataset = get_dummies(
+        dataset[dataset.WINDOW == "0-2"].drop("WINDOW", axis=1), ["AGE_PERCENTIL"]
+    )
+    window_24_dataset = get_dummies(
+        dataset[(dataset.WINDOW == "0-2") | (dataset.WINDOW == "2-4")].drop(
+            "WINDOW", axis=1
+        ),
+        ["AGE_PERCENTIL"],
+    )
+    window_46_dataset = get_dummies(
+        dataset[
+            (dataset.WINDOW == "0-2")
+            | (dataset.WINDOW == "2-4")
+            | (dataset.WINDOW == "4-6")
+        ].drop("WINDOW", axis=1),
+        ["AGE_PERCENTIL"],
+    )
+    window_612_dataset = get_dummies(
+        dataset[
+            (dataset.WINDOW == "0-2")
+            | (dataset.WINDOW == "2-4")
+            | (dataset.WINDOW == "4-6")
+            | (dataset.WINDOW == "6-12")
+        ].drop("WINDOW", axis=1),
+        ["AGE_PERCENTIL"],
+    )
 
-    # Store datasets in a dict
-
-    result = dict()
-
-    result["ffill_datasets"] = dict()
-    result["bfill_datasets"] = dict()
-
-    dataset = dataset_forward_fill
-    window_02_dataset = dataset[dataset.WINDOW == "0-2"]
-    window_24_dataset = dataset[(dataset.WINDOW == "0-2") | (dataset.WINDOW == "2-4")]
-    window_46_dataset = dataset[
-        (dataset.WINDOW == "0-2")
-        | (dataset.WINDOW == "2-4")
-        | (dataset.WINDOW == "4-6")
-    ]
-    window_612_dataset = dataset[
-        (dataset.WINDOW == "0-2")
-        | (dataset.WINDOW == "2-4")
-        | (dataset.WINDOW == "4-6")
-        | (dataset.WINDOW == "6-12")
-    ]
-
-    result["ffill_datasets"] = {
+    result = {
         "window_0_2": window_02_dataset,
         "window_2_4": window_24_dataset,
         "window_4_6": window_46_dataset,
         "window_6_12": window_612_dataset,
-        "window_all": dataset,
-    }
-
-    dataset = dataset_backward_fill
-    window_02_dataset = dataset[dataset.WINDOW == "0-2"]
-    window_24_dataset = dataset[(dataset.WINDOW == "0-2") | (dataset.WINDOW == "2-4")]
-    window_46_dataset = dataset[
-        (dataset.WINDOW == "0-2")
-        | (dataset.WINDOW == "2-4")
-        | (dataset.WINDOW == "4-6")
-    ]
-    window_612_dataset = dataset[
-        (dataset.WINDOW == "0-2")
-        | (dataset.WINDOW == "2-4")
-        | (dataset.WINDOW == "4-6")
-        | (dataset.WINDOW == "6-12")
-    ]
-
-    result["bfill_datasets"] = {
-        "window_0_2": window_02_dataset,
-        "window_2_4": window_24_dataset,
-        "window_4_6": window_46_dataset,
-        "window_6_12": window_612_dataset,
-        "window_all": dataset,
+        "window_all": get_dummies(dataset, ["WINDOW", "AGE_PERCENTIL"]),
     }
 
     return result
@@ -141,4 +121,22 @@ def random_forest(df: pd.DataFrame, target: str) -> tuple:
     clf = RandomForestClassifier(max_depth=30, n_estimators=100)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
-    return metrics.accuracy_score(y_test, y_pred)
+    return (y_test, y_pred)
+
+
+def evaluate(test: pd.Series, pred: np.ndarray) -> str:
+    """
+    Evaluates models accuracy.
+    """
+    acc = f"Accuracy: {metrics.accuracy_score(test, pred)}"
+    prec = f"Precision: {metrics.precision_score(test, pred)}"
+    rec = f"Recall: {metrics.recall_score(test, pred)}"
+    return f"{acc}\n{prec}\n{rec}"
+
+
+def visualize_confusion_matrix(test: pd.Series, pred: np.ndarray) -> None:
+    """
+    Shows a heatmap of confusion matrix.
+    """
+    cm = pd.DataFrame(metrics.confusion_matrix(test, pred))
+    sb.heatmap(cm, annot=True, cmap="Blues")
