@@ -1,10 +1,10 @@
 import json
 import numpy as np
 import pandas as pd
-import seaborn as sb
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn import metrics
+# import seaborn as sb
+# from sklearn.model_selection import train_test_split
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn import metrics
 
 
 def load_xlsx(path: str) -> pd.DataFrame:
