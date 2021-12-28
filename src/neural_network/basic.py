@@ -1,6 +1,6 @@
 import numpy as np
 from .layers import HiddenLayer, OutputLayer
-from .optimizers import StochasticGradientDescent
+from .optimizers import AdaGrad, StochasticGradientDescent
 
 
 class BasicNeuralNetwork:
@@ -21,6 +21,9 @@ class BasicNeuralNetwork:
         layer_size: int | list = 5,
         alpha: float = 1,
         alpha_decay: float = 0.05,
+        optimizer: str = "SGD",
+        momentum: float = 0.0,
+        epsilon: float = 1e-7,
         logs: bool = False,
         log_frequency=1000,
     ) -> None:
@@ -77,7 +80,9 @@ class BasicNeuralNetwork:
         self.max_iters = iterations
 
         # Set optimizer
-        self.optimizer = StochasticGradientDescent(alpha, alpha_decay)
+        if optimizer == "adagrad":
+            self.optimizer = AdaGrad(alpha, alpha_decay, epsilon)
+        self.optimizer = StochasticGradientDescent(alpha, alpha_decay, momentum=momentum)
 
         # Configure logs
         self.logs = logs
@@ -160,9 +165,10 @@ class BasicNeuralNetwork:
     def __accuracy(self, predictions, truths):
         """Calculate accuracy."""
 
+        truths.copy()
         predictions = np.argmax(predictions, axis=1)
 
         if len(truths.shape) == 2:
             truths = np.argmax(truths, axis=1)
-
+    
         return np.mean(predictions == truths)

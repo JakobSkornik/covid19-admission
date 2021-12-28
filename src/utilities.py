@@ -1,4 +1,3 @@
-import json
 import numpy as np
 import pandas as pd
 # import seaborn as sb
@@ -140,3 +139,43 @@ def visualize_confusion_matrix(test: pd.Series, pred: np.ndarray) -> None:
     """
     cm = pd.DataFrame(metrics.confusion_matrix(test, pred))
     sb.heatmap(cm, annot=True, cmap="Blues")
+
+def evaluate_custom(X, y, nn):
+    correct = 0
+    confusion_matrix = {
+        "TP": 0,
+        "TN": 0,
+        "FP": 0,
+        "FN": 0
+    }
+
+    for i in range(len(X)):
+        truth = y[i]
+        entry = X[i]
+
+        predicted = nn.predict(entry)
+        if predicted == truth:
+            correct += 1
+
+            if predicted == 1:
+                confusion_matrix["TP"] += 1
+            else:
+                confusion_matrix["TN"] += 1
+
+        else:
+            if predicted == 1:
+                confusion_matrix["FP"] += 1
+            else:
+                confusion_matrix["FN"] += 1
+
+    print(f"""=======================
+RESULTS:
+
+    TP: {confusion_matrix["TP"]},
+    TN: {confusion_matrix["TN"]},
+    FP: {confusion_matrix["FP"]},
+    FN: {confusion_matrix["FN"]}
+    accuracy: {correct} / {len(X)} = {round((correct / len(X)) * 100, 2)}%
+    """)
+
+    return confusion_matrix

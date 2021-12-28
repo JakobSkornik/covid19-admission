@@ -17,7 +17,7 @@ class DenseLayer:
     def __init__(self, num_of_inputs, num_of_neurons):
         """Initialize DenseLayer class."""
 
-        self.weights = np.random.randn(num_of_inputs, num_of_neurons)
+        self.weights = 2 * np.random.random((num_of_inputs, num_of_neurons)) - 1
         self.biases = np.zeros((1, num_of_neurons))
 
     def forward(self, inputs):
@@ -82,7 +82,8 @@ class OutputLayer:
         """Forward pass."""
 
         self.dense_layer.forward(inputs)
-        return self.activation_function.forward(self.dense_layer.output, truths)
+        loss = self.activation_function.forward(self.dense_layer.output, truths)
+        return loss
 
     def backward(self, inputs, truths):
         """Backward pass."""

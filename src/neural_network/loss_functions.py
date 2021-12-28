@@ -23,7 +23,7 @@ class CategoricalCrossEntropy(Loss):
         elif len(truths.shape) == 2:
             correct_confidences = np.sum(predictions_clipped * truths, axis=1)
 
-        return -np.log(correct_confidences)
+        return -np.log(correct_confidences + 1e-7)
 
     def backward(self, inputs, truths):
         """Backward pass."""
