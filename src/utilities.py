@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-# import seaborn as sb
+import seaborn as sb
 # from sklearn.model_selection import train_test_split
 # from sklearn.ensemble import RandomForestClassifier
 # from sklearn import metrics
@@ -179,3 +179,8 @@ RESULTS:
     """)
 
     return confusion_matrix
+
+def visualize_custom(cm_dict: dict) -> None:
+    """Visualize confusion matrix."""
+    cm = np.array([[cm_dict["TP"], cm_dict["FP"]],[cm_dict["TN"], cm_dict["FN"]]])
+    sb.heatmap(cm, annot=True, cmap="Blues")

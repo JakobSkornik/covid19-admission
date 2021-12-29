@@ -34,5 +34,5 @@ class CategoricalCrossEntropy(Loss):
         if len(truths.shape) == 1:
             truths = np.eye(labels)[truths]
 
-        self.dinputs = -truths / inputs
-        self.dinputs = self.dinputs / samples
+        self.d_inputs = -truths / inputs
+        self.d_inputs = self.d_inputs / samples

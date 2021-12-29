@@ -114,7 +114,6 @@ class BasicNeuralNetwork:
 
         loss = self.output_layer.forward(val, truths)
         predictions = self.output_layer.activation_function.output
-
         return loss, predictions
 
     def backward(self, val, truths):

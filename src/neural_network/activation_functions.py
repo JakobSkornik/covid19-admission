@@ -12,7 +12,7 @@ class ReLU:
     def forward(self, inputs):
         """Forward pass."""
 
-        self.inputs = inputs
+        self.inputs = inputs.copy()
         self.output = np.maximum(0, inputs)
 
     def backward(self, inputs):
@@ -77,6 +77,7 @@ class SoftmaxCCE:
         samples = len(inputs)
         if len(truths.shape) == 2:
             truths = np.argmax(truths, axis=1)
+
         self.d_inputs = inputs.copy()
         self.d_inputs[range(samples), truths] -= 1
         self.d_inputs = self.d_inputs / samples

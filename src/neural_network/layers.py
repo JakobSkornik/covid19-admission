@@ -59,7 +59,13 @@ class HiddenLayer:
     def backward(self, inputs):
         """Backward pass."""
 
+        # print(np.round(inputs, 2))
+        # print("_________")
         self.activation_function.backward(inputs)
+        # print(np.round(inputs, 2))
+        # print("_________")
+        # print(np.round(self.activation_function.d_inputs, 2))
+        # print("===============================")
         self.dense_layer.backward(self.activation_function.d_inputs)
 
 
