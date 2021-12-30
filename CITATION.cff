@@ -4,4 +4,4 @@ authors:
   - family-names: Škornik
     given-names: Jakob
 title: "Predicting ICU Admission of Patients Using Simple Neural Networks"
-version: 2.0.4
+url: https://github.com/JakobSkornik/covid19-admission
