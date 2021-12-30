@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Union
 from .layers import HiddenLayer, OutputLayer
 from .optimizers import AdaGrad, StochasticGradientDescent
 
@@ -18,7 +19,7 @@ class BasicNeuralNetwork:
         output_size: int = 2,
         iterations: int = 10000,
         hidden_layers: int = 1,
-        layer_size: int | list = 5,
+        layer_size: Union[int, list] = 5,
         alpha: float = 1,
         alpha_decay: float = 0.05,
         optimizer: str = "SGD",
@@ -82,14 +83,16 @@ class BasicNeuralNetwork:
         # Set optimizer
         if optimizer == "adagrad":
             self.optimizer = AdaGrad(alpha, alpha_decay, epsilon)
-        self.optimizer = StochasticGradientDescent(alpha, alpha_decay, momentum=momentum)
+        self.optimizer = StochasticGradientDescent(
+            alpha, alpha_decay, momentum=momentum
+        )
 
         # Configure logs
         self.logs = logs
         self.log_frequency = log_frequency
 
-    def learn(self, dataset: list, truths: list) -> None:
-        """Learn method."""
+    def train(self, dataset: list, truths: list) -> None:
+        """Train method."""
 
         dataset = np.array(dataset)
         truths = np.array(truths)
@@ -158,7 +161,7 @@ class BasicNeuralNetwork:
 
         if i % self.log_frequency == 0:
             print(
-                f"{i}: loss: {loss}, accuracy: {accuracy}, learning_rate: {self.optimizer.current_learning_rate}"
+                f"{i}: loss: {round(loss, 4)}, accuracy: {round(accuracy, 4)}, learning_rate: {round(self.optimizer.current_learning_rate, 4)}"
             )
 
     def __accuracy(self, predictions, truths):
@@ -169,5 +172,5 @@ class BasicNeuralNetwork:
 
         if len(truths.shape) == 2:
             truths = np.argmax(truths, axis=1)
-    
+
         return np.mean(predictions == truths)

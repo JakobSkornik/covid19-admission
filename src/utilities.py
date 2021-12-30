@@ -1,15 +1,15 @@
+import json
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sb
-# from sklearn.model_selection import train_test_split
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn import metrics
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import metrics
 
 
 def load_xlsx(path: str) -> pd.DataFrame:
-    """
-    This method loads a xlsx file from path and returns a pandas DataFrame.
-    """
+    """This method loads a xlsx file from path and returns a pandas DataFrame."""
     return pd.read_excel(path)
 
 
@@ -34,9 +34,8 @@ def get_target_variables(dataset: pd.DataFrame) -> pd.DataFrame:
 def append_target_variable(
     dataset: pd.DataFrame, target_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    This method appends the target column by joining two dataframes on column PATIENT_VISIT_IDENTIFIER.
-    """
+    """This method appends the target column by joining two dataframes on column PATIENT_VISIT_IDENTIFIER."""
+
     col = "PATIENT_VISIT_IDENTIFIER"
     result = dataset.join(target_df.set_index(col), on=col)
 
@@ -44,17 +43,13 @@ def append_target_variable(
 
 
 def get_dummies(dataset: pd.DataFrame, cols: list) -> pd.DataFrame:
-    """
-    This method calls the pd.get_dummies method.
-    """
+    """This method calls the pd.get_dummies method."""
 
     return pd.get_dummies(dataset, columns=cols, drop_first=True)
 
 
 def get_datasets(method: str = "bfill") -> dict:
-    """
-    This method creates a dictionary containing datasets.
-    """
+    """This method creates a dictionary containing datasets."""
 
     # Import dataset and append target variable
     dataset = load_xlsx("data/Kaggle_Sirio_Libanes_ICU_Prediction.xlsx")
@@ -106,17 +101,23 @@ def get_datasets(method: str = "bfill") -> dict:
         "window_all": get_dummies(dataset, ["WINDOW", "AGE_PERCENTIL"]),
     }
 
-    return result
+    valid_json = dict(
+        (key, val.to_json(orient="records")) for key, val in result.items()
+    )
+
+    with open("data/datasets.json", "w") as outfile:
+        json.dump(valid_json, outfile)
+
+    return json
 
 
 def random_forest(df: pd.DataFrame, target: str) -> tuple:
-    """
-    This method creates and executes a random forest model for a specified dataframe.
-    """
+    """This method creates and executes a random forest model for a specified dataframe."""
+
     df_test = df.copy()
     y = df_test.pop(target)
     X = df_test
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
     clf = RandomForestClassifier(max_depth=30, n_estimators=100)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -124,36 +125,33 @@ def random_forest(df: pd.DataFrame, target: str) -> tuple:
 
 
 def evaluate(test: pd.Series, pred: np.ndarray) -> str:
-    """
-    Evaluates models accuracy.
-    """
+    """Evaluates models accuracy."""
+
+    tn, fp, fn, tp = metrics.confusion_matrix(test, pred).ravel()
     acc = f"Accuracy: {metrics.accuracy_score(test, pred)}"
-    prec = f"Precision: {metrics.precision_score(test, pred)}"
-    rec = f"Recall: {metrics.recall_score(test, pred)}"
-    return f"{acc}\n{prec}\n{rec}"
+    sens = f"Sensitivity: {round(tp / (tp + fn), 2)}"
+    spec = f"Specificity: {round(tn / (tn + fp), 2)}"
+    return f"{acc}\n{sens}\n{spec}"
 
 
 def visualize_confusion_matrix(test: pd.Series, pred: np.ndarray) -> None:
-    """
-    Shows a heatmap of confusion matrix.
-    """
+    """Shows a heatmap of confusion matrix."""
+
     cm = pd.DataFrame(metrics.confusion_matrix(test, pred))
     sb.heatmap(cm, annot=True, cmap="Blues")
 
+
 def evaluate_custom(X, y, nn):
     correct = 0
-    confusion_matrix = {
-        "TP": 0,
-        "TN": 0,
-        "FP": 0,
-        "FN": 0
-    }
+    confusion_matrix = {"TP": 0, "TN": 0, "FP": 0, "FN": 0}
+
+    y = np.argmax(y, axis=1)
 
     for i in range(len(X)):
         truth = y[i]
         entry = X[i]
-
         predicted = nn.predict(entry)
+
         if predicted == truth:
             correct += 1
 
@@ -168,7 +166,8 @@ def evaluate_custom(X, y, nn):
             else:
                 confusion_matrix["FN"] += 1
 
-    print(f"""=======================
+    print(
+        f"""=======================
 RESULTS:
 
     TP: {confusion_matrix["TP"]},
@@ -176,11 +175,41 @@ RESULTS:
     FP: {confusion_matrix["FP"]},
     FN: {confusion_matrix["FN"]}
     accuracy: {correct} / {len(X)} = {round((correct / len(X)) * 100, 2)}%
-    """)
-
+    sensitivity: {round(confusion_matrix["TP"] / (confusion_matrix["TP"] + confusion_matrix["FN"]), 2)}
+    specificity: {round(confusion_matrix["TN"] / (confusion_matrix["TN"] + confusion_matrix["FP"]), 2)}
+    """
+    )
     return confusion_matrix
+
 
 def visualize_custom(cm_dict: dict) -> None:
     """Visualize confusion matrix."""
-    cm = np.array([[cm_dict["TP"], cm_dict["FP"]],[cm_dict["TN"], cm_dict["FN"]]])
-    sb.heatmap(cm, annot=True, cmap="Blues")
+
+    cm = pd.DataFrame(
+        np.array([[cm_dict["TN"], cm_dict["FP"]], [cm_dict["FN"], cm_dict["TP"]]])
+    )
+    sb.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.title("Confusion Matrix Heatmap")
+    plt.xlabel("Ground Truths")
+    plt.ylabel("Predictions")
+
+
+def split_at_x_percent(dataset: np.ndarray, x: int) -> tuple:
+    """Returns two pd.DataFrames by splitting original one at x%."""
+
+    rows = len(dataset)
+    idx = int((rows * x) / 100)
+
+    if len(dataset.shape) == 1:
+        return dataset[:idx], dataset[idx + 1 :]
+
+    return dataset[:idx, :], dataset[idx + 1 :, :]
+
+
+def one_hot(a, num_classes):
+    """Transforms vector to one-hot encoded vector."""
+
+    if type(a) is list:
+        a = np.array(a)
+
+    return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
